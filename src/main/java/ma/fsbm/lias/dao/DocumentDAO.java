@@ -14,8 +14,19 @@ public class DocumentDAO {
 
     public List<Document> getAllDocuments() throws SQLException {
         List<Document> liste = new ArrayList<>();
-        String sql = "SELECT d.*, CONCAT(m.prenom, ' ', m.nom) AS auteur_nom FROM documents d " +
-                     "LEFT JOIN membres m ON d.ajoute_par = m.id ORDER BY d.date_ajout DESC";
+        // Table documents_laboratoire définie dans schema.sql avec jointure utilisateurs
+        String sql = """
+            SELECT d.id, 
+                   d.nom_original AS titre, 
+                   d.categorie, 
+                   d.chemin AS chemin_fichier, 
+                   d.date_ajout, 
+                   d.ajoute_par, 
+                   CONCAT(u.prenom, ' ', u.nom) AS auteur_nom 
+            FROM documents_laboratoire d 
+            LEFT JOIN utilisateurs u ON d.ajoute_par = u.id 
+            ORDER BY d.date_ajout DESC
+            """;
 
         try (Statement stmt = connection.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
@@ -36,25 +47,39 @@ public class DocumentDAO {
     }
 
     public boolean createDocument(Document doc) throws SQLException {
-        String sql = "INSERT INTO documents (titre, categorie, chemin_fichier, ajoute_par) VALUES (?, ?, ?, ?)";
+        String categorieEnum = normalizeCategorie(doc.getCategorie());
+        String sql = "INSERT INTO documents_laboratoire (nom_original, categorie, chemin, ajoute_par) VALUES (?, ?, ?, ?)";
         try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
             pstmt.setString(1, doc.getTitre());
-            pstmt.setString(2, doc.getCategorie());
+            pstmt.setString(2, categorieEnum);
             pstmt.setString(3, doc.getCheminFichier());
             if (doc.getAjouteParId() != null) {
                 pstmt.setLong(4, doc.getAjouteParId());
             } else {
-                pstmt.setNull(4, Types.BIGINT);
+                pstmt.setLong(4, 1L);
             }
             return pstmt.executeUpdate() > 0;
         }
     }
 
     public boolean deleteDocument(Long id) throws SQLException {
-        String sql = "DELETE FROM documents WHERE id = ?";
+        String sql = "DELETE FROM documents_laboratoire WHERE id = ?";
         try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
             pstmt.setLong(1, id);
             return pstmt.executeUpdate() > 0;
         }
+    }
+
+    private String normalizeCategorie(String cat) {
+        if (cat == null) return "AUTRE";
+        String upper = cat.toUpperCase();
+        if (upper.contains("PV")) return "PV";
+        if (upper.contains("RAPPORT")) return "RAPPORT";
+        if (upper.contains("FINANCE")) return "FINANCEMENT";
+        if (upper.contains("PROGRAMME")) return "PROGRAMME";
+        if (upper.contains("ATTEST")) return "ATTESTATION";
+        if (upper.contains("CONVENT")) return "CONVENTION";
+        if (upper.contains("ADMIN") || upper.contains("REGLEMENT")) return "ADMINISTRATIF";
+        return "AUTRE";
     }
 }

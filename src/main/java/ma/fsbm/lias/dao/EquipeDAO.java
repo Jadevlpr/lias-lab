@@ -14,8 +14,16 @@ public class EquipeDAO {
 
     public List<Equipe> getAllEquipes() throws SQLException {
         List<Equipe> equipes = new ArrayList<>();
-        String sql = "SELECT e.*, CONCAT(m.prenom, ' ', m.nom) AS chef_nom FROM equipes e " +
-                     "LEFT JOIN membres m ON e.chef_id = m.id ORDER BY e.id DESC";
+        // Jointure avec membres et utilisateurs pour récupérer le nom complet du responsable
+        // Note : dans la table membres, prenom et nom se trouvent dans utilisateurs
+        String sql = """
+            SELECT e.*, 
+                   CONCAT(u.prenom, ' ', u.nom) AS chef_nom
+            FROM equipes e
+            LEFT JOIN membres m ON e.chef_id = m.id
+            LEFT JOIN utilisateurs u ON m.utilisateur_id = u.id
+            ORDER BY e.id DESC
+            """;
         
         try (Statement stmt = connection.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
@@ -23,10 +31,24 @@ public class EquipeDAO {
                 Equipe eq = new Equipe();
                 eq.setId(rs.getLong("id"));
                 eq.setNom(rs.getString("nom"));
-                eq.setAcronyme(rs.getString("acronyme"));
-                eq.setDescription(rs.getString("description"));
-                eq.setChefId(rs.getObject("chef_id") != null ? rs.getLong("chef_id") : null);
-                eq.setChefNomComplet(rs.getString("chef_nom"));
+                
+                String acronyme = safeGetString(rs, "acronyme");
+                if (acronyme == null) {
+                    acronyme = safeGetString(rs, "axe_recherche");
+                }
+                eq.setAcronyme(acronyme);
+                eq.setDescription(safeGetString(rs, "description"));
+                
+                Long chefId = null;
+                try {
+                    Object obj = rs.getObject("chef_id");
+                    if (obj != null) {
+                        chefId = rs.getLong("chef_id");
+                    }
+                } catch (SQLException ignored) {}
+                eq.setChefId(chefId);
+                
+                eq.setChefNomComplet(safeGetString(rs, "chef_nom"));
                 equipes.add(eq);
             }
         }
@@ -53,6 +75,14 @@ public class EquipeDAO {
         try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
             pstmt.setLong(1, id);
             return pstmt.executeUpdate() > 0;
+        }
+    }
+
+    private String safeGetString(ResultSet rs, String column) {
+        try {
+            return rs.getString(column);
+        } catch (SQLException e) {
+            return null;
         }
     }
 }

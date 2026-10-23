@@ -17,9 +17,15 @@
             <a href="${pageContext.request.contextPath}/admin/rapport">Rapport</a>
             <c:choose>
                 <c:when test="${not empty sessionScope.utilisateurConnecte}">
-                    <a href="${pageContext.request.contextPath}/dashboard">Espace membre</a>
+                    <a href="${pageContext.request.contextPath}/dashboard" style="color: #f7ce62; font-weight: bold;">
+                        Espace membre (<c:out value="${sessionScope.utilisateurConnecte.prenom}"/>)
+                    </a>
+                    <a href="${pageContext.request.contextPath}/logout" style="color: #ff9999; font-weight: bold;">
+                        Déconnexion
+                    </a>
                 </c:when>
                 <c:otherwise>
+                    <a href="${pageContext.request.contextPath}/adhesion" style="color: #f7ce62; font-weight: bold;">Adhésion / Inscription</a>
                     <a href="${pageContext.request.contextPath}/login">Connexion</a>
                 </c:otherwise>
             </c:choose>

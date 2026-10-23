@@ -2,6 +2,7 @@ package ma.fsbm.lias.controller;
 
 import ma.fsbm.lias.dao.RapportDAO;
 import ma.fsbm.lias.model.RapportStatistiques;
+import ma.fsbm.lias.util.DatabaseConnection;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.*;
@@ -16,19 +17,18 @@ public class RapportServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) 
             throws ServletException, IOException {
-        Connection conn = (Connection) getServletContext().getAttribute("dbConnection");
-        RapportDAO dao = new RapportDAO(conn);
-
+        
         String anneeStr = request.getParameter("annee");
         int annee = (anneeStr != null && !anneeStr.isEmpty()) 
                     ? Integer.parseInt(anneeStr) 
                     : Calendar.getInstance().get(Calendar.YEAR);
 
-        try {
+        try (Connection conn = DatabaseConnection.getConnection()) {
+            RapportDAO dao = new RapportDAO(conn);
             RapportStatistiques stats = dao.getStatistiquesAnnee(annee);
             request.setAttribute("stats", stats);
             request.setAttribute("anneeSelectionnee", annee);
-            request.getRequestDispatcher("/WEB-INF/views/admin/rapport.jsp").forward(request, response);
+            request.getRequestDispatcher("/WEB-INF/views/rapport.jsp").forward(request, response);
         } catch (Exception e) {
             throw new ServletException("Erreur lors de la génération du rapport annuel", e);
         }

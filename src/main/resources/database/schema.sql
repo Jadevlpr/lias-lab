@@ -30,15 +30,6 @@ CREATE TABLE IF NOT EXISTS utilisateur_roles (
 INSERT IGNORE INTO roles (nom) VALUES
 ('ADMINISTRATEUR'), ('DIRECTEUR'), ('VICE_DIRECTEUR'), ('CHEF_EQUIPE'), ('MEMBRE'), ('DOCTORANT');
 
-CREATE TABLE IF NOT EXISTS equipes (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    nom VARCHAR(150) NOT NULL UNIQUE,
-    description TEXT,
-    axe_recherche VARCHAR(255),
-    date_creation DATE,
-    actif BOOLEAN NOT NULL DEFAULT TRUE
-);
-
 CREATE TABLE IF NOT EXISTS membres (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     utilisateur_id BIGINT NOT NULL UNIQUE,
@@ -51,6 +42,18 @@ CREATE TABLE IF NOT EXISTS membres (
     date_embauche DATE,
     date_creation TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_membre_utilisateur FOREIGN KEY (utilisateur_id) REFERENCES utilisateurs(id)
+);
+
+CREATE TABLE IF NOT EXISTS equipes (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    nom VARCHAR(150) NOT NULL UNIQUE,
+    acronyme VARCHAR(50),
+    description TEXT,
+    axe_recherche VARCHAR(255),
+    chef_id BIGINT,
+    date_creation DATE DEFAULT (CURRENT_DATE),
+    actif BOOLEAN NOT NULL DEFAULT TRUE,
+    CONSTRAINT fk_equipe_chef FOREIGN KEY (chef_id) REFERENCES membres(id) ON DELETE SET NULL
 );
 
 CREATE TABLE IF NOT EXISTS affiliations (
@@ -104,6 +107,7 @@ CREATE TABLE IF NOT EXISTS evenements (
     type ENUM('CONFERENCE','SEMINAIRE','WORKSHOP','REUNION','AUTRE') NOT NULL,
     description TEXT,
     lieu VARCHAR(200),
+    lien_en_ligne VARCHAR(255),
     date_debut DATETIME NOT NULL,
     date_fin DATETIME,
     statut ENUM('BROUILLON','PUBLIE','ARCHIVE') NOT NULL DEFAULT 'BROUILLON',
@@ -125,7 +129,10 @@ CREATE TABLE IF NOT EXISTS publications (
     resume TEXT,
     type VARCHAR(80),
     annee SMALLINT NOT NULL,
+    journal_or_conf VARCHAR(255),
     doi VARCHAR(150),
+    lien_pdf VARCHAR(255),
+    bibtex TEXT,
     url VARCHAR(255),
     equipe_id BIGINT,
     ajoute_par BIGINT NOT NULL,
@@ -156,14 +163,23 @@ CREATE TABLE IF NOT EXISTS documents_laboratoire (
     CONSTRAINT fk_document_auteur FOREIGN KEY (ajoute_par) REFERENCES utilisateurs(id)
 );
 
+-- Vue de commodité documents
+CREATE OR REPLACE VIEW documents AS 
+SELECT id, nom_original AS titre, chemin AS chemin_fichier, categorie, evenement_id, ajoute_par, version_document, date_ajout 
+FROM documents_laboratoire;
+
 CREATE TABLE IF NOT EXISTS materiels (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    libelle VARCHAR(200) NOT NULL,
+    nom VARCHAR(200),
+    libelle VARCHAR(200),
+    numero_serie VARCHAR(120),
     reference_materiel VARCHAR(120),
-    quantite_totale INT NOT NULL DEFAULT 0,
-    quantite_disponible INT NOT NULL DEFAULT 0,
-    date_arrivage DATE,
-    etat VARCHAR(100)
+    categorie VARCHAR(100),
+    quantite_totale INT NOT NULL DEFAULT 1,
+    quantite_disponible INT NOT NULL DEFAULT 1,
+    date_arrivage DATE DEFAULT (CURRENT_DATE),
+    etat VARCHAR(100) DEFAULT 'Disponible',
+    localisation VARCHAR(150)
 );
 
 CREATE TABLE IF NOT EXISTS distributions_materiel (
