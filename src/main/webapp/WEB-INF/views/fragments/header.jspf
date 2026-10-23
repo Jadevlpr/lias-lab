@@ -1,0 +1,28 @@
+<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
+<%@ taglib prefix="c" uri="jakarta.tags.core" %>
+<header class="site-header">
+    <div class="topbar">
+        <a class="brand" href="${pageContext.request.contextPath}/home">
+            <span class="brand-mark">LI</span>
+            <span>LIAS <small>Laboratoire · Faculté des Sciences Ben M'Sik</small></span>
+        </a>
+        <nav class="nav" aria-label="Navigation principale">
+            <a href="${pageContext.request.contextPath}/home">Accueil</a>
+            <a href="${pageContext.request.contextPath}/admin/membres">Membres</a>
+            <a href="${pageContext.request.contextPath}/admin/equipes">Équipes</a>
+            <a href="${pageContext.request.contextPath}/admin/evenements">Événements</a>
+            <a href="${pageContext.request.contextPath}/admin/publications">Publications</a>
+            <a href="${pageContext.request.contextPath}/admin/documents">Documents &amp; PV</a>
+            <a href="${pageContext.request.contextPath}/admin/materiels">Matériel</a>
+            <a href="${pageContext.request.contextPath}/admin/rapport">Rapport</a>
+            <c:choose>
+                <c:when test="${not empty sessionScope.utilisateurConnecte}">
+                    <a href="${pageContext.request.contextPath}/dashboard">Espace membre</a>
+                </c:when>
+                <c:otherwise>
+                    <a href="${pageContext.request.contextPath}/login">Connexion</a>
+                </c:otherwise>
+            </c:choose>
+        </nav>
+    </div>
+</header>
